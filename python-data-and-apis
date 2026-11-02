@@ -1,0 +1,111 @@
+# ==========================================
+# MODULE 04: PYTHON DATA & APIS
+# Project: Data Analysis & REST API Consumer
+# ==========================================
+
+import requests
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set style for seaborn/matplotlib plots
+sns.set_theme(style="whitegrid")
+
+print("=== PART 1: CONSUMING A REST API ===")
+# Fetching public data from JSONPlaceholder API (simulating user/sales data)
+api_url = "https://jsonplaceholder.typicode.com/users"
+try:
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        api_data = response.json()
+        print(f"Successfully fetched {len(api_data)} records from REST API!")
+    else:
+        print(f"Failed to fetch API data. Status code: {response.status_code}")
+        api_data = []
+except Exception as e:
+    print(f"Error connecting to API: {e}")
+    api_data = []
+
+# Process JSON payload into a Pandas DataFrame
+if api_data:
+    # Extracting specific fields into a structured format
+    processed_users = []
+    for user in api_data:
+        processed_users.append({
+            "ID": user["id"],
+            "Name": user["name"],
+            "Username": user["username"],
+            "Email": user["email"],
+            "City": user["address"]["city"],
+            "Company": user["company"]["name"]
+        })
+    api_df = pd.DataFrame(processed_users)
+    print("\nAPI DataFrame Preview:")
+    print(api_df.head())
+
+
+print("\n=== PART 2: NUMPY & PANDAS DATA ANALYSIS ===")
+# Creating a sample dataset simulating sales or student performance for advanced analysis & cleaning
+np.random.seed(42)
+data = {
+    "CustomerID": range(101, 121),
+    "Age": np.random.randint(18, 65, size=20),
+    "Annual_Spend_USD": np.random.choice([1200, 2500, 3400, np.nan, 5000, 7200, np.nan, 10500], size=20),
+    "Membership_Years": np.random.randint(1, 10, size=20),
+    "Category": np.random.choice(["Electronics", "Clothing", "Home", "Sports"], size=20)
+}
+
+df = pd.DataFrame(data)
+
+print("\nOriginal DataFrame with Missing Values:")
+print(df.head(10))
+
+# Data Cleaning: Handling Missing Values
+print(f"\nMissing values before cleaning:\n{df.isnull().sum()}")
+median_spend = df["Annual_Spend_USD"].median()
+df["Annual_Spend_USD"] = df["Annual_Spend_USD"].fillna(median_spend) # Impute missing values with median
+print(f"Missing values after filling with median: {df['Annual_Spend_USD'].isnull().sum()}")
+
+# Data Manipulation & Analysis using NumPy/Pandas
+df["Spend_Per_Year"] = df["Annual_Spend_USD"] / df["Membership_Years"]
+category_summary = df.groupby("Category")["Annual_Spend_USD"].agg(["mean", "sum", "count"]).reset_index()
+
+print("\nSummary Analysis Grouped by Product Category:")
+print(category_summary)
+
+
+print("\n=== PART 3: DATA VISUALIZATION (Matplotlib & Seaborn) ===")
+# Setting up a multi-plot dashboard figure
+plt.figure(figsize=(14, 6))
+
+# Plot 1: Seaborn Barplot showing Spending by Category
+plt.subplot(1, 2, 1)
+sns.barplot(data=category_summary, x="Category", y="mean", palette="Blues_d")
+plt.title("Average Annual Spend by Category")
+plt.xlabel("Category")
+plt.ylabel("Average Spend (USD)")
+
+# Plot 2: Seaborn Scatterplot showing Age vs Annual Spend
+plt.subplot(1, 2, 2)
+sns.scatterplot(data=df, x="Age", y="Annual_Spend_USD", hue="Category", s=100, palette="Set2")
+plt.title("Customer Age vs Annual Spend")
+plt.xlabel("Age")
+plt.ylabel("Annual Spend (USD)")
+
+plt.tight_layout()
+plt.show()
+
+
+print("\n=== PART 4: AUTOMATED REPORT GENERATION ===")
+report_summary = f"""
+========================================
+       DATA ANALYSIS AUTOMATED REPORT
+========================================
+Total Records Analyzed : {len(df)}
+Average Customer Age   : {df['Age'].mean():.1f} years
+Total Annual Revenue   : ${df['Annual_Spend_USD'].sum():,.2f}
+Top Spending Category  : {category_summary.loc[category_summary['sum'].idxmax()]['Category']}
+========================================
+"""
+print(report_summary)
